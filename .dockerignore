@@ -1,0 +1,10 @@
+.git
+node_modules
+dist
+public
+private-data
+outputs
+test-results
+playwright-report
+.resources-staging-*
+.env*
