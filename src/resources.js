@@ -17,7 +17,7 @@ export async function verifyResources(manifest, read) {
 }
 async function readLocal(path) {
   if (!path.startsWith('/') || path.startsWith('//')) throw new Error('Запрещён внешний ресурс');
-  const response = await fetch(path, { credentials: 'omit', cache: 'no-store' });
+  const response = await fetch(`${import.meta.env.BASE_URL}${path.slice(1)}`, { credentials: 'omit', cache: 'no-store' });
   if (!response.ok) throw new Error(`Ресурс недоступен (${response.status}): ${path}`);
   return response;
 }

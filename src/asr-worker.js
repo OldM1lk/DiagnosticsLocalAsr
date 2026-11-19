@@ -1,8 +1,8 @@
 import { env, pipeline } from '@huggingface/transformers';
 import { CONFIG } from './config.js';
 env.allowLocalModels = true; env.allowRemoteModels = false;
-env.localModelPath = '/models/'; env.useBrowserCache = false;
-env.backends.onnx.wasm.wasmPaths = '/runtime/';
+env.localModelPath = `${import.meta.env.BASE_URL}models/`; env.useBrowserCache = false;
+env.backends.onnx.wasm.wasmPaths = `${import.meta.env.BASE_URL}runtime/`;
 env.backends.onnx.wasm.numThreads = 1; env.backends.onnx.wasm.proxy = false;
 const nativeFetch = globalThis.fetch.bind(globalThis);
 globalThis.fetch = (input, options) => {

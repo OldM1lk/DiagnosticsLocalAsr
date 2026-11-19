@@ -7,8 +7,11 @@ RUN npm ci --onnxruntime-node-install-cuda=skip
 COPY scripts ./scripts
 COPY src ./src
 COPY index.html ./
+COPY vite.config.js ./
 
 RUN npm run prepare-resources
+ARG APP_BASE_PATH=/
+ENV APP_BASE_PATH=${APP_BASE_PATH}
 RUN npm run build
 
 FROM nginx:stable-alpine
