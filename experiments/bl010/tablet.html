@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BL-010 · Проверка на планшете</title>
+<h1>Проверка распознавания</h1>
+<p><label>Модель <select id="model"><option>GigaAM</option><option>Whisper</option></select></label>
+<button id="prepare">Подготовить модель</button></p>
+<p><label>Оригинал <input type="file" accept="audio/*" id="audio"></label>
+<button id="run" disabled>Распознать</button></p>
+<output id="status" aria-live="polite"></output><ol id="results"></ol>
+<script type="module">
+import {decodeToMono16k} from './audio.js';
+import {CONFIG} from './config.js';
+const el = id => document.getElementById(id);
+let worker;
+function call(data, transfer = []) {
+  return new Promise((resolve,reject) => {
+    worker.onerror = e => reject(new Error(e.message));
+    worker.onmessage = ({data:r}) => r.type === 'error' ? reject(new Error(r.message)) : resolve(r);
+    worker.postMessage(data,transfer);
+  });
+}
+function reset() {
+  worker?.terminate(); worker = null;
+  el('run').disabled = true;
+  el('status').textContent = 'Требуется подготовка модели';
+}
+el('model').onchange = reset;
+async function execute(prepare) {
+  const model = el('model').value, start = performance.now();
+  el('prepare').disabled = el('model').disabled = el('run').disabled = true;
+  try {
+    if (prepare) {
+      reset();
+      el('status').textContent = 'Подготовка ' + model;
+      worker = new Worker(model === 'GigaAM' ? './giga-worker.js' : '__WHISPER_WORKER__',{type:'module'});
+      await call({type:'init',config:CONFIG});
+      el('status').textContent = model + ' готова';
+    } else {
+      const file = el('audio').files[0];
+      if (!file) throw new Error('Выберите запись');
+      el('status').textContent = 'Распознавание ' + file.name;
+      const {samples} = await decodeToMono16k(file);
+      const {rawText} = await call({type:'transcribe',configId:CONFIG.id,samples},[samples.buffer]);
+      const li = document.createElement('li');
+      li.textContent = model + ' · ' + file.name + ' · ' + rawText;
+      el('results').append(li);
+      el('status').textContent = 'Готово';
+    }
+    el('status').textContent += ' · ' + ((performance.now()-start)/1000).toFixed(2) + ' с';
+  } catch (error) {
+    reset(); el('status').textContent = 'Ошибка ' + model + ' · ' + error.message;
+  } finally {
+    el('prepare').disabled = el('model').disabled = false;
+    el('run').disabled = !worker;
+  }
+}
+el('prepare').onclick = () => execute(true);
+el('run').onclick = () => execute(false);
+</script></html>
